@@ -1,0 +1,132 @@
+{
+  "entities": {
+    "Estimate": {
+      "title": "Estimate",
+      "description": "A structural or design contract estimate",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "clientName": { "type": "string" },
+        "projectName": { "type": "string" },
+        "jobLocation": { "type": "string" },
+        "trade": { "type": "string" },
+        "jobType": { "type": "string" },
+        "unitType": { "type": "string" },
+        "laborRate": { "type": "number" },
+        "wastePercent": { "type": "number" },
+        "transportFee": { "type": "number" },
+        "linearMeters": { "type": "number" },
+        "rooms": { "type": "array" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "grandTotal": { "type": "number" },
+        "materialTotal": { "type": "number" },
+        "laborTotal": { "type": "number" },
+        "status": { "type": "string", "enum": ["Draft", "Sent", "Accepted", "Completed"] },
+        "photos": { "type": "array" },
+        "agreedPrice": { "type": "number" },
+        "sealed": { "type": "boolean" },
+        "materialsBoughtBy": { "type": "string", "enum": ["Contractor", "Client"] },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "clientName", "projectName", "grandTotal", "status", "ownerId"]
+    },
+    "Client": {
+      "title": "Client",
+      "description": "A customer or enterprise contracting partner",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "phone": { "type": "string" },
+        "defaultLocation": { "type": "string" },
+        "projectHistory": { "type": "array" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "name", "phone", "ownerId"]
+    },
+    "PaymentReceipt": {
+      "title": "PaymentReceipt",
+      "description": "A remitted transaction receipt for client accounts",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "estimateId": { "type": "string" },
+        "clientName": { "type": "string" },
+        "clientPhone": { "type": "string" },
+        "projectName": { "type": "string" },
+        "amountPaid": { "type": "number" },
+        "paymentMethod": { "type": "string", "enum": ["Cash", "Mobile Money", "Bank Transfer", "Cheque", "Other"] },
+        "paymentDate": { "type": "string", "format": "date-time" },
+        "transactionRef": { "type": "string" },
+        "receivedBy": { "type": "string" },
+        "notes": { "type": "string" },
+        "totalEstimateAmount": { "type": "number" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "clientName", "amountPaid", "paymentMethod", "paymentDate", "ownerId"]
+    },
+    "BusinessProfile": {
+      "title": "BusinessProfile",
+      "description": "Settings for corporate identity and display in receipts",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "phone": { "type": "string" },
+        "slogan": { "type": "string" },
+        "termsAndConditions": { "type": "string" },
+        "logo": { "type": "string" },
+        "currency": { "type": "string", "enum": ["GHS", "USD", "GBP"] },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["name", "location", "phone", "ownerId"]
+    },
+    "Baselines": {
+      "title": "Baselines",
+      "description": "Dynamic structural configuration rate baselines",
+      "type": "object",
+      "properties": {
+        "data": { "type": "object" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["data", "ownerId"]
+    },
+    "TradeConfig": {
+      "title": "TradeConfig",
+      "description": "Trade jobs list config setup",
+      "type": "object",
+      "properties": {
+        "tradeJobs": { "type": "object" },
+        "tradeLabels": { "type": "object" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["tradeJobs", "tradeLabels", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}/estimates/{estimateId}": {
+      "schema": "Estimate",
+      "description": "User specific project contracts estimates"
+    },
+    "/users/{userId}/clients/{clientId}": {
+      "schema": "Client",
+      "description": "User specific customer records"
+    },
+    "/users/{userId}/payments/{paymentId}": {
+      "schema": "PaymentReceipt",
+      "description": "User specific ledger payments receipts"
+    },
+    "/users/{userId}/profile/business": {
+      "schema": "BusinessProfile",
+      "description": "User specific corporate enterprise profile info"
+    },
+    "/users/{userId}/baselines/config": {
+      "schema": "Baselines",
+      "description": "User specific structural unit materials baseline price ledger"
+    },
+    "/users/{userId}/tradeConfig/data": {
+      "schema": "TradeConfig",
+      "description": "User specific custom trade jobs list settings"
+    }
+  }
+}

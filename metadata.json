@@ -1,0 +1,10 @@
+{
+  "name": "DzidEstimator",
+  "description": "A precision estimator tool for POP ceilings, tiling, and painting contractors in Ghana, featuring custom ratios, white-labeled PDF quotes, and WhatsApp sharing.",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

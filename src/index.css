@@ -1,0 +1,204 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-light: var(--primary-light);
+  --color-primary-border: var(--primary-border);
+  --color-accent-text: var(--accent-text);
+  --color-accent-ring: var(--accent-ring);
+
+  --color-bg-canvas: var(--bg-canvas);
+  --color-bg-card: var(--bg-card);
+  --color-bg-panel: var(--bg-panel);
+  --color-bg-input: var(--bg-input);
+  --color-border-card: var(--border-card);
+  --color-text-main: var(--text-main);
+  --color-text-muted: var(--text-muted);
+}
+
+:root {
+  /* Default Theme Defaults */
+  --primary: #2563eb;
+  --primary-hover: #1d4ed8;
+  --primary-light: #eff6ff;
+  --primary-border: #bfdbfe;
+  --accent-text: #1e40af;
+  --accent-ring: rgba(37, 99, 235, 0.15);
+
+  --bg-canvas: #f8fafc;
+  --bg-card: #ffffff;
+  --bg-panel: #f1f5f9;
+  --bg-input: #ffffff;
+  --border-card: #e2e8f0;
+  --text-main: #0f172a;
+  --text-muted: #64748b;
+}
+
+/* Dark Mode overrides for hardcoded light classes */
+.dark {
+  --bg-canvas: #0b0f19;
+  --bg-card: #151f32;
+  --bg-panel: #1e293e;
+  --bg-input: #0b0f19;
+  --border-card: #53688f;
+  --text-main: #f1f5f9;
+  --text-muted: #a2b4cd;
+}
+
+.dark .bg-white {
+  background-color: var(--bg-card) !important;
+}
+
+.dark .bg-neutral-50,
+.dark .bg-neutral-100 {
+  background-color: var(--bg-panel) !important;
+}
+
+.dark .bg-neutral-25,
+.dark .bg-neutral-50/50 {
+  background-color: var(--bg-canvas) !important;
+}
+
+.dark .border-neutral-100,
+.dark .border-neutral-200,
+.dark .border-neutral-205,
+.dark .border-neutral-250,
+.dark .border-neutral-300,
+.dark .border-neutral-400 {
+  border-color: var(--border-card) !important;
+}
+
+.dark .text-neutral-900,
+.dark .text-neutral-800,
+.dark .text-neutral-950,
+.dark .text-neutral-700 {
+  color: var(--text-main) !important;
+}
+
+.dark .text-neutral-400,
+.dark .text-neutral-500,
+.dark .text-neutral-600 {
+  color: var(--text-muted) !important;
+}
+
+/* Custom transitions for colors */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* Print CSS stylesheet override */
+@media print {
+  /* Hide the active navigation layers, mobile menu, footer, inputs */
+  body {
+    background-color: white !important;
+    color: black !important;
+  }
+  
+  #app-nav-header,
+  #input-controls-column,
+  #quick-results-summary,
+  #app-nav-footer-mobile,
+  #app-footer,
+  button,
+  a,
+  .print-hide {
+    display: none !important;
+  }
+
+  #app-main-content {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Expand results column to take full printed width */
+  #estimator-workspace {
+    display: block !important;
+  }
+  
+  #output-previews-column {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #quotation-invoicing-sheet {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #receipt-preview-container {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* Make sure the PDF bill is printed perfectly full page */
+  .printable-section {
+    border: none !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    padding: 0.5rem !important;
+    width: 100% !important;
+    visibility: visible !important;
+  }
+
+  /* Compact the elements inside printable section to prevent 2-page print overflow */
+  .printable-section #invoice-head-logo {
+    height: 3rem !important;
+    width: 3rem !important;
+  }
+  .printable-section h3 {
+    font-size: 1.25rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+  .printable-section p, .printable-section span, .printable-section div, .printable-section th, .printable-section td {
+    font-size: 0.7rem !important;
+    line-height: 1.25 !important;
+  }
+  .printable-section .py-4, .printable-section .py-3 {
+    padding-top: 0.35rem !important;
+    padding-bottom: 0.35rem !important;
+  }
+  .printable-section td, .printable-section th {
+    padding-top: 0.3rem !important;
+    padding-bottom: 0.3rem !important;
+  }
+  .printable-section .mt-8, .printable-section .mt-2 {
+    margin-top: 0.5rem !important;
+  }
+  .printable-section .mb-2 {
+    margin-bottom: 0.25rem !important;
+  }
+  .printable-section .pt-4 {
+    padding-top: 0.4rem !important;
+  }
+  .printable-section .pb-6 {
+    padding-bottom: 0.4rem !important;
+  }
+  .printable-section .gap-12 {
+    gap: 1.5rem !important;
+  }
+  .printable-section #receipt-site-photos-gallery {
+    margin-top: 0.4rem !important;
+    padding-top: 0.4rem !important;
+  }
+  .printable-section #receipt-site-photos-gallery span {
+    margin-bottom: 0.25rem !important;
+  }
+  .printable-section #receipt-site-photos-gallery img {
+    height: 3rem !important;
+    width: 3rem !important;
+  }
+}
+

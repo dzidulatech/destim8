@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Recurrent Helper Definitions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // 3. User Document Partition & Nesting Matches
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+
+      match /estimates/{estimateId} {
+        allow read, write: if isOwner(userId) && isValidId(estimateId);
+      }
+
+      match /clients/{clientId} {
+        allow read, write: if isOwner(userId) && isValidId(clientId);
+      }
+
+      match /payments/{paymentId} {
+        allow read, write: if isOwner(userId) && isValidId(paymentId);
+      }
+
+      match /profile/business {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /baselines/config {
+        allow read, write: if isOwner(userId);
+      }
+
+      match /tradeConfig/data {
+        allow read, write: if isOwner(userId);
+      }
+    }
+  }
+}

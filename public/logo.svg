@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b0f19" />
+      <stop offset="100%" stop-color="#151f32" />
+    </linearGradient>
+    
+    <!-- Gold / Amber Accent Gradient -->
+    <linearGradient id="accentGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38bdf8" />
+      <stop offset="100%" stop-color="#0284c7" />
+    </linearGradient>
+
+    <!-- Glowing soft shadow for brand logo -->
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="15" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
+  </defs>
+
+  <!-- Solid Backing -->
+  <rect width="512" height="512" rx="112" fill="url(#bgGrad)" />
+
+  <!-- Subtle grid dots in background representing floor tiling and blueprint precision -->
+  <g opacity="0.15">
+    <circle cx="96" cy="96" r="4" fill="#ffffff" />
+    <circle cx="256" cy="96" r="4" fill="#ffffff" />
+    <circle cx="416" cy="96" r="4" fill="#ffffff" />
+    <circle cx="96" cy="256" r="4" fill="#ffffff" />
+    <circle cx="256" cy="256" r="4" fill="#ffffff" />
+    <circle cx="416" cy="256" r="4" fill="#ffffff" />
+    <circle cx="96" cy="416" r="4" fill="#ffffff" />
+    <circle cx="256" cy="416" r="4" fill="#ffffff" />
+    <circle cx="416" cy="416" r="4" fill="#ffffff" />
+  </g>
+
+  <!-- Architectural Isometric Cube / Ceiling Panel Outline in Golden Amber -->
+  <g stroke="#f59e0b" stroke-width="4" fill="none" opacity="0.25">
+    <path d="M256 60 L450 160 L450 360 L256 460 L62 360 L62 160 Z" />
+    <path d="M256 60 L256 460" />
+    <path d="M62 160 L450 360" />
+    <path d="M450 160 L62 360" />
+  </g>
+
+  <!-- Hexagon Outer Boundary Box representing structured contract spaces -->
+  <polygon points="256,40 440,146 440,366 256,472 72,366 72,146" fill="none" stroke="url(#accentGrad)" stroke-width="12" filter="url(#glow)" />
+
+  <!-- Inner construction elements (POP drywall lines & Tiles) inside Badge -->
+  <g transform="translate(181, 151)">
+    <!-- Main Badge Base Shield -->
+    <path d="M0,35 C0,15 20,0 75,0 C130,0 150,15 150,35 L150,145 C150,175 75,210 75,210 C75,210 0,175 0,145 Z" fill="#0f172a" stroke="#1e293b" stroke-width="6" />
+    
+    <!-- Tiled Floor pattern inside badge background -->
+    <path d="M10,40 L140,40 M10,90 L140,90 M10,140 L140,140 M50,10 L50,185 M100,10 L100,185" stroke="#1e293b" stroke-width="2" opacity="0.4" />
+
+    <!-- Highly polished "DE" Monogram with overlapping architectural vectors -->
+    <!-- The "D" in Bright Cyan Sky -->
+    <path d="M35,50 L80,50 C105,50 115,65 115,85 C115,105 105,120 80,120 L35,120 Z" fill="none" stroke="#38bdf8" stroke-width="14" stroke-linejoin="round" stroke-linecap="round" />
+    <path d="M35,50 L35,120" stroke="#38bdf8" stroke-width="14" stroke-linecap="round" />
+
+    <!-- The "E" overlapping in High Contrast Soft White/Gold -->
+    <path d="M55,68 L95,68 M55,85 L85,85 M55,102 L95,102" stroke="#ffffff" stroke-width="10" stroke-linecap="round" opacity="0.95" />
+  </g>
+
+  <!-- Glowing Core Microdots at intersection centers -->
+  <circle cx="256" cy="40" r="8" fill="#f59e0b" />
+  <circle cx="256" cy="472" r="8" fill="#38bdf8" />
+  <circle cx="72" cy="146" r="6" fill="#38bdf8" />
+  <circle cx="440" cy="146" r="6" fill="#38bdf8" />
+  <circle cx="72" cy="366" r="6" fill="#f59e0b" />
+  <circle cx="440" cy="366" r="6" fill="#f59e0b" />
+</svg>
