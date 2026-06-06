@@ -4,15 +4,34 @@
   "description": "Precision estimator tool for POP ceilings, tiling, and painting contractors in Ghana, featuring custom ratios, white-labeled PDF quotes, ledgers, and receipts.",
   "icons": [
     {
-      "src": "/logo.svg",
+      "src": "./logo.svg",
       "type": "image/svg+xml",
-      "sizes": "any",
-      "purpose": "any maskable"
+      "sizes": "192x192",
+      "purpose": "any"
+    },
+    {
+      "src": "./logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "any"
+    },
+    {
+      "src": "./logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "192x192",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./logo.svg",
+      "type": "image/svg+xml",
+      "sizes": "512x512",
+      "purpose": "maskable"
     }
   ],
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "background_color": "#0b0f19",
-  "theme_color": "#2563eb",
+  "theme_color": "#0b0f19",
   "display": "standalone",
   "orientation": "any"
 }

@@ -1,10 +1,10 @@
 // Standalone Simple Service Worker for DzidEstimator Trades
-const CACHE_NAME = 'dzidestimator-v1';
+const CACHE_NAME = 'dzidestimator-v2';
 const ASSETS = [
-  '/',
-  '/index.html',
-  '/logo.svg',
-  '/manifest.json'
+  './',
+  './index.html',
+  './logo.svg',
+  './manifest.json'
 ];
 
 self.addEventListener('install', (event) => {
