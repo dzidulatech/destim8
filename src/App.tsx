@@ -8,7 +8,6 @@ import SettingsView from './components/SettingsView';
 import FeaturesView from './components/FeaturesView';
 import ReceiptsView from './components/ReceiptsView';
 import LoginView from './components/LoginView';
-import InstallPrompt from './components/InstallPrompt';
 import { auth, db, signOut, handleFirestoreError, OperationType } from './firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { doc, getDoc, setDoc, deleteDoc, collection, getDocs } from 'firebase/firestore';
@@ -647,9 +646,6 @@ export default function App() {
       style={styleVars}
       id="applet-root"
     >
-      {/* PWA App Installation/Download Announcement */}
-      <InstallPrompt themeColor={primaryColor} />
-
       {/* Visual Navigation Header */}
       <header className="sticky top-0 z-40 bg-bg-card border-b border-border-card shadow-xs max-w-full overflow-x-hidden" id="app-nav-header">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Sparkles, ArrowRight, ShieldCheck, ExternalLink } from 'lucide-react';
 import { signInWithPopup, googleProvider, auth } from '../firebase';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
 
@@ -10,6 +10,7 @@ interface LoginViewProps {
 export default function LoginView({ onSignInSuccess }: LoginViewProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [authErrorType, setAuthErrorType] = useState<'unauthorized-domain' | 'storage' | 'blocked' | 'general' | null>(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isSignUp, setIsSignUp] = useState(false);
@@ -17,12 +18,28 @@ export default function LoginView({ onSignInSuccess }: LoginViewProps) {
   const handleGoogleSignIn = async () => {
     setLoading(true);
     setError(null);
+    setAuthErrorType(null);
     try {
       await signInWithPopup(auth, googleProvider);
       onSignInSuccess();
     } catch (err: any) {
       console.error("Google Auth execution failed:", err);
-      setError(err?.message || "Sign-in was interrupted. Please try again.");
+      const errCode = err?.code;
+      const errMessage = err?.message || "";
+      
+      if (errCode === 'auth/unauthorized-domain' || errMessage.includes('unauthorized-domain')) {
+        setAuthErrorType('unauthorized-domain');
+        setError(`Unauthorized Domain: The browser preview domain "${window.location.hostname}" is not authorized in your Firebase Project configuration.`);
+      } else if (errCode === 'auth/web-storage-unsupported' || errMessage.includes('web-storage-unsupported') || window.self !== window.top) {
+        setAuthErrorType('storage');
+        setError("Browser iframe restriction: The Google sign-in window was blocked from writing security tokens inside this nested preview iframe.");
+      } else if (errCode === 'auth/popup-blocked' || errMessage.includes('popup-blocked')) {
+        setAuthErrorType('blocked');
+        setError("Pop-up blocked: Your web browser prevented the Google login window from opening.");
+      } else {
+        setAuthErrorType('general');
+        setError(err?.message || "Sign-in was interrupted. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -121,8 +138,53 @@ export default function LoginView({ onSignInSuccess }: LoginViewProps) {
 
           <div className="border-t border-slate-800/85 pt-4 space-y-4">
             {error && (
-              <div className="p-3.5 bg-red-950/40 border border-red-900/50 rounded-2xl text-[11px] text-red-300 font-medium text-center animate-shake">
-                {error}
+              <div className="p-4 bg-red-950/40 border border-red-900/50 rounded-2xl text-[11px] text-red-300 font-medium text-left animate-shake space-y-3">
+                <p className="font-bold text-red-200">⚠️ Authentication Error</p>
+                <p className="leading-relaxed">{error}</p>
+                
+                {authErrorType && (
+                  <div className="pt-3 border-t border-red-900/40 text-[10px] text-slate-350 space-y-2">
+                    <p className="font-bold text-sky-400 uppercase tracking-wider text-[9px]">How to resolve this issue:</p>
+                    
+                    {authErrorType === 'unauthorized-domain' && (
+                      <div className="space-y-1.5">
+                        <p className="text-slate-400">Since this is a custom preview domain, you can resolve this in your Firebase console:</p>
+                        <ol className="list-decimal pl-3.5 space-y-1 text-slate-400 font-normal">
+                          <li>Go to <a href="https://console.firebase.google.com/" target="_blank" rel="noreferrer" className="text-sky-400 underline inline-flex items-center gap-0.5 font-bold hover:text-sky-300">Firebase Console <ExternalLink className="h-2.5 w-2.5" /></a></li>
+                          <li>Open <b className="text-slate-200">Authentication &gt; Settings &gt; Authorized domains</b></li>
+                          <li>Add <code className="bg-slate-950 px-1 py-0.5 rounded-sm text-emerald-400 font-mono select-all font-bold">{window.location.hostname}</code> to the list.</li>
+                          <li>Alternatively, use <b className="text-slate-200">Email Sign-In below</b> to bypass Google Auth bounds entirely.</li>
+                        </ol>
+                      </div>
+                    )}
+
+                    {authErrorType === 'storage' && (
+                      <div className="space-y-1.5">
+                        <p className="text-slate-400">Embedded preview frames block cross-origin cookie storage by default. You can:</p>
+                        <ul className="list-disc pl-3.5 space-y-1 text-slate-400 font-normal">
+                          <li>Click the <b className="text-slate-200">"Open in New Tab"</b> icon at the top right of your AI Studio browser panel.</li>
+                          <li>Or use the <b className="text-slate-200">Email fields below</b> to sign in easily without browser popup security limits.</li>
+                        </ul>
+                      </div>
+                    )}
+
+                    {authErrorType === 'blocked' && (
+                      <div className="space-y-1.5">
+                        <p className="text-slate-400">The browser prevented the auth window from popping up. You can:</p>
+                        <ul className="list-disc pl-3.5 space-y-1 text-slate-400 font-normal">
+                          <li>Click the pop-up blocker icon in your browser URL address bar and click "Always allow popups on this site".</li>
+                          <li>Then click the Google Sign-in button again.</li>
+                        </ul>
+                      </div>
+                    )}
+
+                    {authErrorType === 'general' && (
+                      <p className="text-slate-400">
+                        If Google Auth fails, you can sign in instantly using the <b className="text-slate-200">Email and Password form below</b> (no actual email verification required).
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
