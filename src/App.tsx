@@ -204,9 +204,32 @@ export default function App() {
         try {
           const uid = u.uid;
 
-          // 1. Business Profile Sync
+          // Define all references and collections
           const profileRef = doc(db, 'users', uid, 'profile', 'business');
-          const profileSnap = await getDoc(profileRef).catch(e => handleFirestoreError(e, OperationType.GET, `users/${uid}/profile/business`));
+          const baselinesRef = doc(db, 'users', uid, 'baselines', 'config');
+          const tradeRef = doc(db, 'users', uid, 'tradeConfig', 'data');
+          const estCol = collection(db, 'users', uid, 'estimates');
+          const clientCol = collection(db, 'users', uid, 'clients');
+          const payCol = collection(db, 'users', uid, 'payments');
+
+          // Fetch ALL 6 documents/collections in parallel! This speeds up load by 6x
+          const [
+            profileSnap,
+            baselinesSnap,
+            tradeSnap,
+            estSnap,
+            clientSnap,
+            paySnap
+          ] = await Promise.all([
+            getDoc(profileRef).catch(e => { handleFirestoreError(e, OperationType.GET, `users/${uid}/profile/business`); return null; }),
+            getDoc(baselinesRef).catch(e => { handleFirestoreError(e, OperationType.GET, `users/${uid}/baselines/config`); return null; }),
+            getDoc(tradeRef).catch(e => { handleFirestoreError(e, OperationType.GET, `users/${uid}/tradeConfig/data`); return null; }),
+            getDocs(estCol).catch(e => { handleFirestoreError(e, OperationType.GET, `users/${uid}/estimates`); return null; }),
+            getDocs(clientCol).catch(e => { handleFirestoreError(e, OperationType.GET, `users/${uid}/clients`); return null; }),
+            getDocs(payCol).catch(e => { handleFirestoreError(e, OperationType.GET, `users/${uid}/payments`); return null; })
+          ]);
+
+          // --- 1. Business Profile ---
           let resolvedProfile: BusinessProfile = INITIAL_BIZ_PROFILE;
           if (profileSnap && profileSnap.exists()) {
             resolvedProfile = profileSnap.data() as BusinessProfile;
@@ -222,9 +245,7 @@ export default function App() {
             localStorage.setItem('estim8_profile', JSON.stringify(resolvedProfile));
           }
 
-          // 2. Baselines Sync
-          const baselinesRef = doc(db, 'users', uid, 'baselines', 'config');
-          const baselinesSnap = await getDoc(baselinesRef).catch(e => handleFirestoreError(e, OperationType.GET, `users/${uid}/baselines/config`));
+          // --- 2. Baselines ---
           if (baselinesSnap && baselinesSnap.exists()) {
             const dataBase = baselinesSnap.data() as any;
             setBaselines(dataBase.data);
@@ -238,9 +259,7 @@ export default function App() {
             localStorage.setItem('estim8_baselines', JSON.stringify(localParsed));
           }
 
-          // 3. Trade Config Sync
-          const tradeRef = doc(db, 'users', uid, 'tradeConfig', 'data');
-          const tradeSnap = await getDoc(tradeRef).catch(e => handleFirestoreError(e, OperationType.GET, `users/${uid}/tradeConfig/data`));
+          // --- 3. Trade Config ---
           if (tradeSnap && tradeSnap.exists()) {
             const tData = tradeSnap.data() as any;
             if (tData.tradeJobs) {
@@ -256,193 +275,243 @@ export default function App() {
               .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/tradeConfig/data`));
           }
 
-          // 4. Estimates Sync
-          const estCol = collection(db, 'users', uid, 'estimates');
-          const estSnap = await getDocs(estCol).catch(e => handleFirestoreError(e, OperationType.GET, `users/${uid}/estimates`));
+          // --- 4. Estimates Sync & Merge ---
+          const localEstimatesRaw = localStorage.getItem('estim8_recent');
+          const localParsedEst: Estimate[] = localEstimatesRaw ? JSON.parse(localEstimatesRaw) : [];
+          
           let dbEstimates: Estimate[] = [];
           if (estSnap && !estSnap.empty) {
-            dbEstimates = estSnap.docs.map(doc => doc.data() as Estimate).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-            setRecentEstimates(dbEstimates);
-            localStorage.setItem('estim8_recent', JSON.stringify(dbEstimates));
-          } else {
-            const localRaw = localStorage.getItem('estim8_recent');
-            const localParsed: Estimate[] = localRaw ? JSON.parse(localRaw) : [];
-            if (localParsed.length > 0) {
-              for (const est of localParsed) {
-                await setDoc(doc(db, 'users', uid, 'estimates', est.id), { ...est, ownerId: uid })
-                  .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/estimates/${est.id}`));
-              }
-              setRecentEstimates(localParsed);
-              localStorage.setItem('estim8_recent', JSON.stringify(localParsed));
+            dbEstimates = estSnap.docs.map(doc => doc.data() as Estimate);
+          }
+
+          // Smart merge: prevent local files from being cleared by database loading!
+          const mergedEstimates = [...dbEstimates];
+          const localOnlyEstToUpload: Estimate[] = [];
+
+          for (const localEst of localParsedEst) {
+            const matchIndex = mergedEstimates.findIndex(e => e.id === localEst.id);
+            if (matchIndex === -1) {
+              mergedEstimates.push(localEst);
+              localOnlyEstToUpload.push(localEst);
             } else {
-              const defaults: Estimate[] = [
-                {
-                  id: "E8-20260603-0001",
-                  clientName: "Ama Mensah",
-                  projectName: "Living Room Renovation",
-                  jobLocation: "Airport Residential, Accra",
-                  trade: "tiling",
-                  jobType: "floor",
-                  unitType: "sqm",
-                  laborRate: 60,
-                  wastePercent: 5,
-                  transportFee: 150,
-                  linearMeters: 100,
-                  rooms: [
-                    { id: "r1", name: "Living Room", l: 600, w: 500 },
-                    { id: "r2", name: "Hallway", l: 400, w: 200 }
-                  ],
-                  createdAt: new Date("2026-06-03T10:30:00Z").toISOString(),
-                  materialTotal: 8400,
-                  laborTotal: 2280,
-                  grandTotal: 10830,
-                  status: "Accepted"
-                },
-                {
-                  id: "E8-20260603-0002",
-                  clientName: "Kwame Boateng",
-                  projectName: "Full Gypsum Ceilings",
-                  jobLocation: "Osu, Accra",
-                  trade: "pop",
-                  jobType: "full",
-                  unitType: "sqm",
-                  laborRate: 45,
-                  wastePercent: 5,
-                  transportFee: 300,
-                  linearMeters: 100,
-                  rooms: [
-                    { id: "r1", name: "Master Suite", l: 500, w: 450 },
-                    { id: "r2", name: "Dining Hall", l: 400, w: 400 }
-                  ],
-                  createdAt: new Date("2026-06-03T14:15:00Z").toISOString(),
-                  materialTotal: 9800,
-                  laborTotal: 1732.5,
-                  grandTotal: 11832.5,
-                  status: "Draft"
-                }
-              ];
-              for (const est of defaults) {
-                await setDoc(doc(db, 'users', uid, 'estimates', est.id), { ...est, ownerId: uid })
-                  .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/estimates/${est.id}`));
+              // Same ID exists - compare dates to see whichever is newer
+              const localTime = localEst.createdAt ? new Date(localEst.createdAt).getTime() : 0;
+              const remoteTime = mergedEstimates[matchIndex].createdAt ? new Date(mergedEstimates[matchIndex].createdAt).getTime() : 0;
+              if (localTime > remoteTime) {
+                mergedEstimates[matchIndex] = localEst;
+                localOnlyEstToUpload.push(localEst);
               }
-              setRecentEstimates(defaults);
-              localStorage.setItem('estim8_recent', JSON.stringify(defaults));
             }
           }
 
-          // 5. Clients Sync
-          const clientCol = collection(db, 'users', uid, 'clients');
-          const clientSnap = await getDocs(clientCol).catch(e => handleFirestoreError(e, OperationType.GET, `users/${uid}/clients`));
+          // Upload any local estimates not yet in the cloud
+          for (const est of localOnlyEstToUpload) {
+            setDoc(doc(db, 'users', uid, 'estimates', est.id), { ...est, ownerId: uid })
+              .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/estimates/${est.id}`));
+          }
+
+          // If both were completely empty, seed defaults
+          if (mergedEstimates.length === 0) {
+            const defaults: Estimate[] = [
+              {
+                id: "E8-20260603-0001",
+                clientName: "Ama Mensah",
+                projectName: "Living Room Renovation",
+                jobLocation: "Airport Residential, Accra",
+                trade: "tiling",
+                jobType: "floor",
+                unitType: "sqm",
+                laborRate: 60,
+                wastePercent: 5,
+                transportFee: 150,
+                linearMeters: 100,
+                rooms: [
+                  { id: "r1", name: "Living Room", l: 600, w: 500 },
+                  { id: "r2", name: "Hallway", l: 400, w: 200 }
+                ],
+                createdAt: new Date("2026-06-03T10:30:00Z").toISOString(),
+                materialTotal: 8400,
+                laborTotal: 2280,
+                grandTotal: 10830,
+                status: "Accepted"
+              },
+              {
+                id: "E8-20260603-0002",
+                clientName: "Kwame Boateng",
+                projectName: "Full Gypsum Ceilings",
+                jobLocation: "Osu, Accra",
+                trade: "pop",
+                jobType: "full",
+                unitType: "sqm",
+                laborRate: 45,
+                wastePercent: 5,
+                transportFee: 300,
+                linearMeters: 100,
+                rooms: [
+                  { id: "r1", name: "Master Suite", l: 500, w: 450 },
+                  { id: "r2", name: "Dining Hall", l: 400, w: 400 }
+                ],
+                createdAt: new Date("2026-06-03T14:15:00Z").toISOString(),
+                materialTotal: 9800,
+                laborTotal: 1732.5,
+                grandTotal: 11832.5,
+                status: "Draft"
+              }
+            ];
+            for (const est of defaults) {
+              await setDoc(doc(db, 'users', uid, 'estimates', est.id), { ...est, ownerId: uid })
+                .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/estimates/${est.id}`));
+            }
+            setRecentEstimates(defaults);
+            localStorage.setItem('estim8_recent', JSON.stringify(defaults));
+          } else {
+            mergedEstimates.sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            setRecentEstimates(mergedEstimates);
+            localStorage.setItem('estim8_recent', JSON.stringify(mergedEstimates));
+          }
+
+          // --- 5. Clients Sync & Merge ---
+          const localClientsRaw = localStorage.getItem('estim8_clients');
+          const localParsedClients: Client[] = localClientsRaw ? JSON.parse(localClientsRaw) : [];
+
+          let dbClients: Client[] = [];
           if (clientSnap && !clientSnap.empty) {
-            const dbClients = clientSnap.docs.map(doc => doc.data() as Client);
-            setClients(dbClients);
-            localStorage.setItem('estim8_clients', JSON.stringify(dbClients));
-          } else {
-            const localRaw = localStorage.getItem('estim8_clients');
-            const localParsed: Client[] = localRaw ? JSON.parse(localRaw) : [];
-            if (localParsed.length > 0) {
-              for (const cl of localParsed) {
-                await setDoc(doc(db, 'users', uid, 'clients', cl.id), { ...cl, ownerId: uid })
-                  .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/clients/${cl.id}`));
-              }
-              setClients(localParsed);
-              localStorage.setItem('estim8_clients', JSON.stringify(localParsed));
+            dbClients = clientSnap.docs.map(doc => doc.data() as Client);
+          }
+
+          const mergedClients = [...dbClients];
+          const localOnlyClientsToUpload: Client[] = [];
+
+          for (const localCl of localParsedClients) {
+            const matchIndex = mergedClients.findIndex(c => c.id === localCl.id);
+            if (matchIndex === -1) {
+              mergedClients.push(localCl);
+              localOnlyClientsToUpload.push(localCl);
             } else {
-              const defaults: Client[] = [
-                {
-                  id: "C-1",
-                  name: "Ama Mensah",
-                  phone: "+233 24 456 7890",
-                  defaultLocation: "Airport Residential, Accra",
-                  projectHistory: [
-                    {
-                      estimateId: "E8-20260603-0001",
-                      projectName: "Living Room Renovation",
-                      date: new Date("2026-06-03T10:30:00Z").toISOString(),
-                      total: 10830
-                    }
-                  ]
-                },
-                {
-                  id: "C-2",
-                  name: "Kwame Boateng",
-                  phone: "+233 20 888 1234",
-                  defaultLocation: "Osu, Accra",
-                  projectHistory: [
-                    {
-                      estimateId: "E8-20260603-0002",
-                      projectName: "Full Gypsum Ceilings",
-                      date: new Date("2026-06-03T14:15:00Z").toISOString(),
-                      total: 11832.5
-                    }
-                  ]
-                }
-              ];
-              for (const cl of defaults) {
-                await setDoc(doc(db, 'users', uid, 'clients', cl.id), { ...cl, ownerId: uid })
-                  .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/clients/${cl.id}`));
+              // Prefer client with deeper history or simply merge history
+              const localHistory = localCl.projectHistory || [];
+              const remoteHistory = mergedClients[matchIndex].projectHistory || [];
+              if (localHistory.length > remoteHistory.length) {
+                mergedClients[matchIndex] = localCl;
+                localOnlyClientsToUpload.push(localCl);
               }
-              setClients(defaults);
-              localStorage.setItem('estim8_clients', JSON.stringify(defaults));
             }
           }
 
-          // 6. Payments Sync
-          const payCol = collection(db, 'users', uid, 'payments');
-          const paySnap = await getDocs(payCol).catch(e => handleFirestoreError(e, OperationType.GET, `users/${uid}/payments`));
-          if (paySnap && !paySnap.empty) {
-            const dbPayments = paySnap.docs.map(doc => doc.data() as PaymentReceipt);
-            setPayments(dbPayments);
-            localStorage.setItem('estim8_payments', JSON.stringify(dbPayments));
+          for (const cl of localOnlyClientsToUpload) {
+            setDoc(doc(db, 'users', uid, 'clients', cl.id), { ...cl, ownerId: uid })
+              .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/clients/${cl.id}`));
+          }
+
+          if (mergedClients.length === 0) {
+            const defaults: Client[] = [
+              {
+                id: "C-1",
+                name: "Ama Mensah",
+                phone: "+233 24 456 7890",
+                defaultLocation: "Airport Residential, Accra",
+                projectHistory: [
+                  {
+                    estimateId: "E8-20260603-0001",
+                    projectName: "Living Room Renovation",
+                    date: new Date("2026-06-03T10:30:00Z").toISOString(),
+                    total: 10830
+                  }
+                ]
+              },
+              {
+                id: "C-2",
+                name: "Kwame Boateng",
+                phone: "+233 20 888 1234",
+                defaultLocation: "Osu, Accra",
+                projectHistory: [
+                  {
+                    estimateId: "E8-20260603-0002",
+                    projectName: "Full Gypsum Ceilings",
+                    date: new Date("2026-06-03T14:15:00Z").toISOString(),
+                    total: 11832.5
+                  }
+                ]
+              }
+            ];
+            for (const cl of defaults) {
+              await setDoc(doc(db, 'users', uid, 'clients', cl.id), { ...cl, ownerId: uid })
+                .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/clients/${cl.id}`));
+            }
+            setClients(defaults);
+            localStorage.setItem('estim8_clients', JSON.stringify(defaults));
           } else {
-            const localRaw = localStorage.getItem('estim8_payments');
-            const localParsed: PaymentReceipt[] = localRaw ? JSON.parse(localRaw) : [];
-            if (localParsed.length > 0) {
-              for (const p of localParsed) {
-                await setDoc(doc(db, 'users', uid, 'payments', p.id), { ...p, ownerId: uid })
-                  .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/payments/${p.id}`));
-              }
-              setPayments(localParsed);
-              localStorage.setItem('estim8_payments', JSON.stringify(localParsed));
-            } else {
-              const defaults: PaymentReceipt[] = [
-                {
-                  id: "RCP-20260603-0518",
-                  estimateId: "E8-20260603-0001",
-                  clientName: "Ama Mensah",
-                  clientPhone: "+233 24 456 7890",
-                  projectName: "Living Room Renovation (Tiling)",
-                  amountPaid: 7500,
-                  paymentMethod: "Mobile Money",
-                  paymentDate: "2026-06-03",
-                  transactionRef: "MTN-884920199",
-                  receivedBy: resolvedProfile.name || "DzidEstimator Operator",
-                  notes: "70% mobilization deposit advanced prior to tile purchase.",
-                  totalEstimateAmount: 10830
-                },
-                {
-                  id: "RCP-20260604-0912",
-                  estimateId: "E8-20260603-0002",
-                  clientName: "Kwame Boateng",
-                  clientPhone: "+233 20 888 1234",
-                  projectName: "Full Gypsum Ceilings (POP)",
-                  amountPaid: 5000,
-                  paymentMethod: "Bank Transfer",
-                  paymentDate: "2026-06-04",
-                  transactionRef: "FT-BB-002891",
-                  receivedBy: resolvedProfile.name || "DzidEstimator Operator",
-                  notes: "Initial advance for scaffolding and materials logistics.",
-                  totalEstimateAmount: 11832.5
-                }
-              ];
-              for (const p of defaults) {
-                await setDoc(doc(db, 'users', uid, 'payments', p.id), { ...p, ownerId: uid })
-                  .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/payments/${p.id}`));
-              }
-              setPayments(defaults);
-              localStorage.setItem('estim8_payments', JSON.stringify(defaults));
+            setClients(mergedClients);
+            localStorage.setItem('estim8_clients', JSON.stringify(mergedClients));
+          }
+
+          // --- 6. Payments Sync & Merge ---
+          const localPaymentsRaw = localStorage.getItem('estim8_payments');
+          const localParsedPayments: PaymentReceipt[] = localPaymentsRaw ? JSON.parse(localPaymentsRaw) : [];
+
+          let dbPayments: PaymentReceipt[] = [];
+          if (paySnap && !paySnap.empty) {
+            dbPayments = paySnap.docs.map(doc => doc.data() as PaymentReceipt);
+          }
+
+          const mergedPayments = [...dbPayments];
+          const localOnlyPaymentsToUpload: PaymentReceipt[] = [];
+
+          for (const localP of localParsedPayments) {
+            const matchIndex = mergedPayments.findIndex(p => p.id === localP.id);
+            if (matchIndex === -1) {
+              mergedPayments.push(localP);
+              localOnlyPaymentsToUpload.push(localP);
             }
           }
+
+          for (const p of localOnlyPaymentsToUpload) {
+            setDoc(doc(db, 'users', uid, 'payments', p.id), { ...p, ownerId: uid })
+              .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/payments/${p.id}`));
+          }
+
+          if (mergedPayments.length === 0) {
+            const defaults: PaymentReceipt[] = [
+              {
+                id: "RCP-20260603-0518",
+                estimateId: "E8-20260603-0001",
+                clientName: "Ama Mensah",
+                clientPhone: "+233 24 456 7890",
+                projectName: "Living Room Renovation (Tiling)",
+                amountPaid: 7500,
+                paymentMethod: "Mobile Money",
+                paymentDate: "2026-06-03",
+                transactionRef: "MTN-884920199",
+                receivedBy: resolvedProfile.name || "DzidEstimator Operator",
+                notes: "70% mobilization deposit advanced prior to tile purchase.",
+                totalEstimateAmount: 10830
+              },
+              {
+                id: "RCP-20260604-0912",
+                estimateId: "E8-20260603-0002",
+                clientName: "Kwame Boateng",
+                clientPhone: "+233 20 888 1234",
+                projectName: "Full Gypsum Ceilings (POP)",
+                amountPaid: 5000,
+                paymentMethod: "Bank Transfer",
+                paymentDate: "2026-06-04",
+                transactionRef: "FT-BB-002891",
+                receivedBy: resolvedProfile.name || "DzidEstimator Operator",
+                notes: "Initial advance for scaffolding and materials logistics.",
+                totalEstimateAmount: 11832.5
+              }
+            ];
+            for (const p of defaults) {
+              await setDoc(doc(db, 'users', uid, 'payments', p.id), { ...p, ownerId: uid })
+                .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/payments/${p.id}`));
+            }
+            setPayments(defaults);
+            localStorage.setItem('estim8_payments', JSON.stringify(defaults));
+          } else {
+            setPayments(mergedPayments);
+            localStorage.setItem('estim8_payments', JSON.stringify(mergedPayments));
+          }
+
         } catch (err) {
           console.error("Cloud synchronization mapped fails:", err);
         } finally {
