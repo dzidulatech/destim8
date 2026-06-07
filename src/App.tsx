@@ -81,12 +81,47 @@ const THEME_COLOR_MAP: Record<string, {
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'home' | 'estimate' | 'settings' | 'features' | 'receipts'>('home');
-  const [recentEstimates, setRecentEstimates] = useState<Estimate[]>([]);
-  const [businessProfile, setBusinessProfile] = useState<BusinessProfile>(INITIAL_BIZ_PROFILE);
-  const [baselines, setBaselines] = useState<BaselinesType>(INITIAL_BASELINES);
+  const [recentEstimates, setRecentEstimates] = useState<Estimate[]>(() => {
+    try {
+      const saved = localStorage.getItem('estim8_recent');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [businessProfile, setBusinessProfile] = useState<BusinessProfile>(() => {
+    try {
+      const saved = localStorage.getItem('estim8_profile');
+      return saved ? JSON.parse(saved) : INITIAL_BIZ_PROFILE;
+    } catch {
+      return INITIAL_BIZ_PROFILE;
+    }
+  });
+  const [baselines, setBaselines] = useState<BaselinesType>(() => {
+    try {
+      const saved = localStorage.getItem('estim8_baselines');
+      return saved ? JSON.parse(saved) : INITIAL_BASELINES;
+    } catch {
+      return INITIAL_BASELINES;
+    }
+  });
   const [activeEstimate, setActiveEstimate] = useState<Estimate | null>(null);
-  const [clients, setClients] = useState<Client[]>([]);
-  const [payments, setPayments] = useState<PaymentReceipt[]>([]);
+  const [clients, setClients] = useState<Client[]>(() => {
+    try {
+      const saved = localStorage.getItem('estim8_clients');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [payments, setPayments] = useState<PaymentReceipt[]>(() => {
+    try {
+      const saved = localStorage.getItem('estim8_payments');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   
   // Custom dropdown and easy access install popup state
   const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
@@ -164,7 +199,7 @@ export default function App() {
     const unsubscribe = onAuthStateChanged(auth, async (u) => {
       if (u) {
         setUser(u);
-        setAuthLoading(true);
+        setAuthLoading(false); // Enable immediate instant render of offline data!
         setSyncing(true);
         try {
           const uid = u.uid;
@@ -176,6 +211,7 @@ export default function App() {
           if (profileSnap && profileSnap.exists()) {
             resolvedProfile = profileSnap.data() as BusinessProfile;
             setBusinessProfile(resolvedProfile);
+            localStorage.setItem('estim8_profile', JSON.stringify(resolvedProfile));
           } else {
             const localRaw = localStorage.getItem('estim8_profile');
             const localParsed = localRaw ? JSON.parse(localRaw) : INITIAL_BIZ_PROFILE;
@@ -183,6 +219,7 @@ export default function App() {
             await setDoc(profileRef, { ...resolvedProfile, ownerId: uid })
               .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/profile/business`));
             setBusinessProfile(resolvedProfile);
+            localStorage.setItem('estim8_profile', JSON.stringify(resolvedProfile));
           }
 
           // 2. Baselines Sync
@@ -191,12 +228,14 @@ export default function App() {
           if (baselinesSnap && baselinesSnap.exists()) {
             const dataBase = baselinesSnap.data() as any;
             setBaselines(dataBase.data);
+            localStorage.setItem('estim8_baselines', JSON.stringify(dataBase.data));
           } else {
             const localRaw = localStorage.getItem('estim8_baselines');
             const localParsed = localRaw ? JSON.parse(localRaw) : INITIAL_BASELINES;
             await setDoc(baselinesRef, { data: localParsed, ownerId: uid })
               .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/baselines/config`));
             setBaselines(localParsed);
+            localStorage.setItem('estim8_baselines', JSON.stringify(localParsed));
           }
 
           // 3. Trade Config Sync
@@ -204,8 +243,14 @@ export default function App() {
           const tradeSnap = await getDoc(tradeRef).catch(e => handleFirestoreError(e, OperationType.GET, `users/${uid}/tradeConfig/data`));
           if (tradeSnap && tradeSnap.exists()) {
             const tData = tradeSnap.data() as any;
-            if (tData.tradeJobs) setTradeJobs(tData.tradeJobs);
-            if (tData.tradeLabels) setTradeLabels(tData.tradeLabels);
+            if (tData.tradeJobs) {
+              setTradeJobs(tData.tradeJobs);
+              localStorage.setItem('estim8_trade_jobs', JSON.stringify(tData.tradeJobs));
+            }
+            if (tData.tradeLabels) {
+              setTradeLabels(tData.tradeLabels);
+              localStorage.setItem('estim8_trade_labels', JSON.stringify(tData.tradeLabels));
+            }
           } else {
             await setDoc(tradeRef, { tradeJobs, tradeLabels, ownerId: uid })
               .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/tradeConfig/data`));
@@ -218,6 +263,7 @@ export default function App() {
           if (estSnap && !estSnap.empty) {
             dbEstimates = estSnap.docs.map(doc => doc.data() as Estimate).sort((a,b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
             setRecentEstimates(dbEstimates);
+            localStorage.setItem('estim8_recent', JSON.stringify(dbEstimates));
           } else {
             const localRaw = localStorage.getItem('estim8_recent');
             const localParsed: Estimate[] = localRaw ? JSON.parse(localRaw) : [];
@@ -227,6 +273,7 @@ export default function App() {
                   .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/estimates/${est.id}`));
               }
               setRecentEstimates(localParsed);
+              localStorage.setItem('estim8_recent', JSON.stringify(localParsed));
             } else {
               const defaults: Estimate[] = [
                 {
@@ -279,6 +326,7 @@ export default function App() {
                   .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/estimates/${est.id}`));
               }
               setRecentEstimates(defaults);
+              localStorage.setItem('estim8_recent', JSON.stringify(defaults));
             }
           }
 
@@ -288,6 +336,7 @@ export default function App() {
           if (clientSnap && !clientSnap.empty) {
             const dbClients = clientSnap.docs.map(doc => doc.data() as Client);
             setClients(dbClients);
+            localStorage.setItem('estim8_clients', JSON.stringify(dbClients));
           } else {
             const localRaw = localStorage.getItem('estim8_clients');
             const localParsed: Client[] = localRaw ? JSON.parse(localRaw) : [];
@@ -297,6 +346,7 @@ export default function App() {
                   .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/clients/${cl.id}`));
               }
               setClients(localParsed);
+              localStorage.setItem('estim8_clients', JSON.stringify(localParsed));
             } else {
               const defaults: Client[] = [
                 {
@@ -333,6 +383,7 @@ export default function App() {
                   .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/clients/${cl.id}`));
               }
               setClients(defaults);
+              localStorage.setItem('estim8_clients', JSON.stringify(defaults));
             }
           }
 
@@ -342,6 +393,7 @@ export default function App() {
           if (paySnap && !paySnap.empty) {
             const dbPayments = paySnap.docs.map(doc => doc.data() as PaymentReceipt);
             setPayments(dbPayments);
+            localStorage.setItem('estim8_payments', JSON.stringify(dbPayments));
           } else {
             const localRaw = localStorage.getItem('estim8_payments');
             const localParsed: PaymentReceipt[] = localRaw ? JSON.parse(localRaw) : [];
@@ -351,6 +403,7 @@ export default function App() {
                   .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/payments/${p.id}`));
               }
               setPayments(localParsed);
+              localStorage.setItem('estim8_payments', JSON.stringify(localParsed));
             } else {
               const defaults: PaymentReceipt[] = [
                 {
@@ -387,6 +440,7 @@ export default function App() {
                   .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/payments/${p.id}`));
               }
               setPayments(defaults);
+              localStorage.setItem('estim8_payments', JSON.stringify(defaults));
             }
           }
         } catch (err) {

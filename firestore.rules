@@ -24,21 +24,15 @@ service cloud.firestore {
       allow read, write: if isOwner(userId);
 
       match /estimates/{estimateId} {
-        allow get: if isOwner(userId) && isValidId(estimateId);
-        allow list: if isOwner(userId);
-        allow write: if isOwner(userId) && isValidId(estimateId);
+        allow read, write: if isOwner(userId);
       }
 
       match /clients/{clientId} {
-        allow get: if isOwner(userId) && isValidId(clientId);
-        allow list: if isOwner(userId);
-        allow write: if isOwner(userId) && isValidId(clientId);
+        allow read, write: if isOwner(userId);
       }
 
       match /payments/{paymentId} {
-        allow get: if isOwner(userId) && isValidId(paymentId);
-        allow list: if isOwner(userId);
-        allow write: if isOwner(userId) && isValidId(paymentId);
+        allow read, write: if isOwner(userId);
       }
 
       match /profile/business {
