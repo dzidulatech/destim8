@@ -1,5 +1,5 @@
 import { useState, useEffect, CSSProperties } from 'react';
-import { Home, Calculator, Settings, Code, Sparkles, HardHat, Calendar, Sun, Moon, Palette, Receipt, LogOut, Cloud } from 'lucide-react';
+import { Home, Calculator, Settings, Code, Sparkles, HardHat, Calendar, Sun, Moon, Palette, Receipt, LogOut, Cloud, MoreVertical, X, Smartphone, Laptop, PlusSquare, HelpCircle, RefreshCw, Bookmark } from 'lucide-react';
 import { Estimate, BaselinesType, BusinessProfile, TradeKey, EstimateStatus, Client, PaymentReceipt } from './types';
 import { INITIAL_BASELINES, INITIAL_BIZ_PROFILE } from './config';
 import HomeView from './components/HomeView';
@@ -87,6 +87,10 @@ export default function App() {
   const [activeEstimate, setActiveEstimate] = useState<Estimate | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [payments, setPayments] = useState<PaymentReceipt[]>([]);
+  
+  // Custom dropdown and easy access install popup state
+  const [showMoreMenu, setShowMoreMenu] = useState<boolean>(false);
+  const [showInstallModal, setShowInstallModal] = useState<boolean>(false);
 
   // Auth States
   const [user, setUser] = useState<User | null | undefined>(undefined);
@@ -771,6 +775,77 @@ export default function App() {
               )}
             </button>
 
+            {/* Three-Dot Extra Menu Options */}
+            <div className="relative shrink-0" id="three-dot-menu-container">
+              <button
+                onClick={() => setShowMoreMenu(!showMoreMenu)}
+                className={`p-1.5 sm:p-2 cursor-pointer bg-bg-panel hover:bg-border-card text-text-main border border-border-card rounded-xl transition-all flex items-center justify-center shrink-0 ${showMoreMenu ? 'ring-2 ring-primary/20 bg-bg-panel' : ''}`}
+                title="Easy Access Options"
+                id="btn-more-options"
+              >
+                <MoreVertical className="h-4 w-4 text-text-muted" />
+              </button>
+
+              {showMoreMenu && (
+                <>
+                  {/* Invisible backdrop to dismiss with a click anywhere else */}
+                  <div className="fixed inset-0 z-40 bg-transparent" onClick={() => setShowMoreMenu(false)} />
+                  <div 
+                    className="absolute right-0 mt-2 w-60 bg-bg-card border border-border-card rounded-2xl shadow-xl z-50 py-1.5 animate-slide-up"
+                    id="more-options-dropdown"
+                  >
+                    <div className="px-3.5 py-1 border-b border-border-card/60 bg-bg-panel mb-1.5 rounded-t-2xl">
+                      <span className="text-[10px] font-black text-text-muted uppercase tracking-wider">Workspace Options</span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        setShowInstallModal(true);
+                      }}
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-bg-panel text-xs font-bold text-text-main flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                      id="opt-install-app"
+                    >
+                      <Smartphone className="h-4 w-4 text-primary shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate">Download / Install App</span>
+                        <span className="text-[9px] text-text-muted font-semibold truncate leading-none mt-0.5">Place icon on your device screen</span>
+                      </div>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        setActiveTab('features');
+                      }}
+                      className="w-full text-left px-3.5 py-2.5 hover:bg-bg-panel text-xs font-bold text-text-main flex items-center gap-2.5 transition-colors cursor-pointer border-none bg-transparent"
+                      id="opt-guides-matrix"
+                    >
+                      <HelpCircle className="h-4 w-4 text-emerald-500 shrink-0" />
+                      <div className="flex flex-col min-w-0">
+                        <span className="truncate">Guides & Matrix</span>
+                        <span className="text-[9px] text-text-muted font-semibold truncate leading-none mt-0.5">Explore overall capabilities</span>
+                      </div>
+                    </button>
+
+                    <div className="border-t border-border-card/60 my-1 pt-1.5">
+                      <button
+                        onClick={() => {
+                          setShowMoreMenu(false);
+                          window.location.reload();
+                        }}
+                        className="w-full text-left px-3.5 py-2 hover:bg-red-500/10 text-xs font-bold text-text-muted hover:text-red-400 flex items-center gap-2 transition-colors cursor-pointer border-none bg-transparent"
+                        id="opt-refresh-client"
+                      >
+                        <RefreshCw className="h-3.5 w-3.5 shrink-0" />
+                        <span>Force Refresh Workspace</span>
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
             {/* Existing Calendar box */}
             <div className="hidden lg:flex items-center gap-2 text-xs font-bold text-text-muted bg-bg-panel border border-border-card rounded-xl px-3 py-2">
               <Calendar className="h-3.5 w-3.5 text-text-muted shrink-0" />
@@ -888,6 +963,130 @@ export default function App() {
           </div>
         </div>
       </footer>
+
+      {/* EASY ACCESS / INSTALL APPLICATION MODAL POPUP */}
+      {showInstallModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in" id="install-guide-overlay">
+          <div 
+            className="bg-bg-card border border-border-card rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up"
+            id="install-modal-container"
+          >
+            {/* Modal Header */}
+            <div className="p-5 border-b border-border-card flex items-center justify-between bg-bg-panel">
+              <div className="flex items-center gap-3">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                  <Smartphone className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-text-main text-sm sm:text-base">Easy Screen Access Options</h3>
+                  <p className="text-[10px] sm:text-xs text-text-muted mt-0.5">Place a standalone launcher icon of DzidEstimator on your phone or computer</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="p-1.5 text-text-muted hover:text-text-main rounded-xl hover:bg-bg-panel transition-colors cursor-pointer border-none bg-transparent"
+                title="Dismiss Guide"
+                id="close-install-modal-btn"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {/* Modal Scrollable Content */}
+            <div className="p-5 sm:p-6 space-y-6 overflow-y-auto flex-1">
+              
+              {/* Value Propositions / Why do this? */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="bg-bg-panel p-3.5 rounded-2xl border border-border-card/60 flex flex-col items-center text-center">
+                  <span className="text-xl mb-1.5">⚡</span>
+                  <span className="text-xs font-bold text-text-main">Instant Launch</span>
+                  <p className="text-[10px] text-text-muted mt-1 leading-normal">Bypasses slow browser typing—opens immediately like a native utility.</p>
+                </div>
+                <div className="bg-bg-panel p-3.5 rounded-2xl border border-border-card/60 flex flex-col items-center text-center">
+                  <span className="text-xl mb-1.5">🔒</span>
+                  <span className="text-xs font-bold text-text-main">Cloud Connected</span>
+                  <p className="text-[10px] text-text-muted mt-1 leading-normal">Work securely! All trade data syncs seamlessly back to Firestore cloud lines.</p>
+                </div>
+                <div className="bg-bg-panel p-3.5 rounded-2xl border border-border-card/60 flex flex-col items-center text-center">
+                  <span className="text-xl mb-1.5">💾</span>
+                  <span className="text-xs font-bold text-text-main">Zero Footprint</span>
+                  <p className="text-[10px] text-text-muted mt-1 leading-normal">Requires no storage space, no Android APK configs, and no App Store updates.</p>
+                </div>
+              </div>
+
+              {/* Instructions Row */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                
+                {/* iOS instructions */}
+                <div className="bg-bg-panel/50 p-4 rounded-2xl border border-border-card space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border-card/60">
+                    <span className="text-xs font-black inline-flex items-center gap-1 bg-sky-500/10 text-sky-500 px-2 py-0.5 rounded-md">iOS</span>
+                    <h4 className="text-xs font-bold text-text-main">Safari on iPhone & iPad</h4>
+                  </div>
+                  <ol className="space-y-2.5 text-xs text-text-muted">
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-border-card text-[10px] text-text-main font-bold shrink-0">1</span>
+                      <span className="leading-relaxed">Tap the <b className="text-text-main font-bold">Share</b> button at the bottom of Safari (square with up-arrow).</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-border-card text-[10px] text-text-main font-bold shrink-0">2</span>
+                      <span className="leading-relaxed">Scroll down and select the <b className="text-text-main font-bold">"Add to Home Screen"</b> option (<span className="text-sky-500 font-bold">+</span> button).</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-border-card text-[10px] text-text-main font-bold shrink-0">3</span>
+                      <span className="leading-relaxed">Tap <b className="text-text-main font-bold">"Add"</b> in the top right. DzidEstimator is now ready on your home screen!</span>
+                    </li>
+                  </ol>
+                </div>
+
+                {/* Android & PC instructions */}
+                <div className="bg-bg-panel/50 p-4 rounded-2xl border border-border-card space-y-3">
+                  <div className="flex items-center gap-2 pb-2 border-b border-border-card/60">
+                    <span className="text-xs font-black inline-flex items-center gap-1 bg-emerald-500/10 text-emerald-500 px-2 py-0.5 rounded-md font-sans">Chrome</span>
+                    <h4 className="text-xs font-bold text-text-main">Android / laptop / PC browsers</h4>
+                  </div>
+                  <ol className="space-y-2.5 text-xs text-text-muted">
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-border-card text-[10px] text-text-main font-bold shrink-0">1</span>
+                      <span className="leading-relaxed">Tap the <b className="text-text-main font-bold">Three-Dot Menu</b> in Chrome (top right of browser).</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-border-card text-[10px] text-text-main font-bold shrink-0">2</span>
+                      <span className="leading-relaxed">Click <b className="text-text-main font-bold">"Install App"</b> or <b className="text-text-main font-bold">"Add to Home Screen"</b>.</span>
+                    </li>
+                    <li className="flex gap-2">
+                      <span className="flex h-5 w-5 items-center justify-center rounded-full bg-border-card text-[10px] text-text-main font-bold shrink-0">3</span>
+                      <span className="leading-relaxed">Confirm the dialog to place a standalone workspace shortcut on your screen instantly.</span>
+                    </li>
+                  </ol>
+                </div>
+
+              </div>
+
+              {/* Bookmark callout */}
+              <div className="bg-amber-500/5 p-4 rounded-2xl border border-amber-500/20 text-xs text-amber-500/90 leading-relaxed flex items-start gap-2.5">
+                <span className="text-lg leading-none mt-0.5">📌</span>
+                <div>
+                  <b className="font-bold block text-text-main text-[11px] mb-0.5">Alternative Quick Method:</b>
+                  To stay logged in with instant touch, simply bookmark this preview web address in your browser favorites bar, or click <b className="text-text-main">"Open in New Tab"</b> at the top right of your AI Studio frame to get a clean full-browser view of your estimator ledger.
+                </div>
+              </div>
+
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 bg-bg-panel border-t border-border-card flex items-center justify-end">
+              <button
+                onClick={() => setShowInstallModal(false)}
+                className="px-5 py-2.5 bg-primary hover:bg-primary-hover text-white text-xs font-bold rounded-xl shadow-xs transition-colors cursor-pointer border-none"
+                id="install-modal-dismiss-btn"
+              >
+                Understood, Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
