@@ -231,6 +231,7 @@ export default function App() {
 
           // --- 1. Business Profile ---
           let resolvedProfile: BusinessProfile = INITIAL_BIZ_PROFILE;
+          const isNewCloudAccount = !profileSnap || !profileSnap.exists();
           if (profileSnap && profileSnap.exists()) {
             resolvedProfile = profileSnap.data() as BusinessProfile;
             setBusinessProfile(resolvedProfile);
@@ -310,8 +311,8 @@ export default function App() {
               .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/estimates/${est.id}`));
           }
 
-          // If both were completely empty, seed defaults
-          if (mergedEstimates.length === 0) {
+          // If both were completely empty and this is a brand new account, seed defaults
+          if (mergedEstimates.length === 0 && isNewCloudAccount) {
             const defaults: Estimate[] = [
               {
                 id: "E8-20260603-0001",
@@ -403,7 +404,7 @@ export default function App() {
               .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/clients/${cl.id}`));
           }
 
-          if (mergedClients.length === 0) {
+          if (mergedClients.length === 0 && isNewCloudAccount) {
             const defaults: Client[] = [
               {
                 id: "C-1",
@@ -470,7 +471,7 @@ export default function App() {
               .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${uid}/payments/${p.id}`));
           }
 
-          if (mergedPayments.length === 0) {
+          if (mergedPayments.length === 0 && isNewCloudAccount) {
             const defaults: PaymentReceipt[] = [
               {
                 id: "RCP-20260603-0518",
@@ -546,14 +547,30 @@ export default function App() {
   };
 
   const handleUpdateClients = async (updatedList: Client[]) => {
+    const deleted = clients.filter(c => !updatedList.some(u => u.id === c.id));
     setClients(updatedList);
     localStorage.setItem('estim8_clients', JSON.stringify(updatedList));
+    if (user) {
+      for (const c of deleted) {
+        await deleteDoc(doc(db, 'users', user.uid, 'clients', c.id))
+          .catch(e => handleFirestoreError(e, OperationType.DELETE, `users/${user.uid}/clients/${c.id}`));
+      }
+      for (const c of updatedList) {
+        await setDoc(doc(db, 'users', user.uid, 'clients', c.id), { ...c, ownerId: user.uid })
+          .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}/clients/${c.id}`));
+      }
+    }
   };
 
   const handleUpdatePayments = async (updatedList: PaymentReceipt[]) => {
+    const deleted = payments.filter(p => !updatedList.some(u => u.id === p.id));
     setPayments(updatedList);
     localStorage.setItem('estim8_payments', JSON.stringify(updatedList));
     if (user) {
+      for (const p of deleted) {
+        await deleteDoc(doc(db, 'users', user.uid, 'payments', p.id))
+          .catch(e => handleFirestoreError(e, OperationType.DELETE, `users/${user.uid}/payments/${p.id}`));
+      }
       for (const p of updatedList) {
         await setDoc(doc(db, 'users', user.uid, 'payments', p.id), { ...p, ownerId: user.uid })
           .catch(e => handleFirestoreError(e, OperationType.WRITE, `users/${user.uid}/payments/${p.id}`));
