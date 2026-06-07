@@ -651,7 +651,7 @@ export default function App() {
       id="applet-root"
     >
       {/* Visual Navigation Header */}
-      <header className="sticky top-0 z-40 bg-bg-card border-b border-border-card shadow-xs max-w-full overflow-x-hidden" id="app-nav-header">
+      <header className="sticky top-0 z-50 bg-bg-card border-b border-border-card shadow-xs max-w-full" id="app-nav-header">
         <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-1.5 sm:gap-2.5 cursor-pointer min-w-0" onClick={() => setActiveTab('home')}>
             <span className="h-10 w-10 rounded-xl bg-primary text-white font-extrabold flex items-center justify-center shadow-md shadow-primary/10 shrink-0">
@@ -966,7 +966,7 @@ export default function App() {
 
       {/* EASY ACCESS / INSTALL APPLICATION MODAL POPUP */}
       {showInstallModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in" id="install-guide-overlay">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-fade-in" id="install-guide-overlay">
           <div 
             className="bg-bg-card border border-border-card rounded-3xl shadow-2xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[90vh] animate-slide-up"
             id="install-modal-container"
