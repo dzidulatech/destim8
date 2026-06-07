@@ -403,7 +403,7 @@ export default function App() {
     });
 
     return () => unsubscribe();
-  }, [tradeJobs, tradeLabels]);
+  }, []);
 
   const handleThemeChange = (newTheme: string) => {
     setTheme(newTheme);
